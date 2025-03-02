@@ -1,0 +1,52 @@
+---
+services:
+  vault:
+    image: vault:1.13.3
+    container_name: vault-receiver
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_ADDR: "http://0.0.0.0/8200"
+      VAULT_DEV_ROOT_TOKEN_ID : "myroot"
+    healthcheck:
+      test: ["CMD","vault","status"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+  zookeeper:
+    image: antrea/confluentinc-zookeeper:6.2.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+  broker:
+    image: antrea/confluentinc-kafka:6.2.0
+    container_name: broker
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://host.docker.internal:9092,PLAINTEXT_INTERNAL://broker:29092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: ["CMD","kafka-topics","--list","--bootstrap-server","localhost:9092" ]
+      start_period: 15s
+      interval: 5s
+      timeout: 10s
+      retries: 10
+  console:
+    image: docker.redpanda.com/vectorized/console:latest
+    container_name: console
+    ports:
+      - "8082:8080"
+    environment:
+      KAFKA_BROKERS: host.docker.internal:9092
+    depends_on:
+      broker:
+        condition: service_healthy

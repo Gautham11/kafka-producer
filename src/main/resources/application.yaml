@@ -1,0 +1,12 @@
+kafka:
+  topic: test-kafka-topic
+encryption:
+  key: encrypt-key
+server:
+  port: 11000
+spring:
+  cloud:
+    vault:
+      enabled: true
+      uri: http://localhost:8200
+      token: myroot
