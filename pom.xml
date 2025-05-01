@@ -13,10 +13,11 @@
     <description>Spring Boot application for Kafka Producer</description>
 
     <properties>
-        <java.version>17</java.version>
-        <spring.boot.version>3.1.2</spring.boot.version>
+        <java.version>19</java.version>
+        <spring.boot.version>3.1.4</spring.boot.version>
         <spring.kafka.version>3.0.7</spring.kafka.version>
-        <lombok.version>1.18.28</lombok.version>
+        <lombok.version>1.18.30</lombok.version>
+        <start-class>com.example.kafkaproducer.KafkaProducerApplication</start-class>
     </properties>
 
     <dependencies>
@@ -63,27 +64,7 @@
             <version>${spring.kafka.version}</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.example</groupId>
-            <artifactId>security-library</artifactId>
-            <version>1.0-SNAPSHOT</version>
-            <exclusions>
-                <exclusion>
 
-                <groupId>org.slf4j</groupId>
-                <artifactId>jul-to-slf4j</artifactId>
-
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.logging.log4j</groupId>
-                    <artifactId>log4j-to-slf4j</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>ch.qos.logback</groupId>
-                    <artifactId>logback-classic</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
@@ -103,7 +84,20 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>${spring.boot.version}</version>
+                <configuration>
+                    <mainClass>com.example.kafkaproducer.KafkaProducerApplication</mainClass>
+                    <layout>JAR</layout>
+                    <layers>
+                        <enabled>true</enabled>
+                    </layers>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
@@ -113,6 +107,19 @@
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>com.google.cloud.tools</groupId>
+                <artifactId>jib-maven-plugin</artifactId>
+                <version>3.4.5</version>
+                <configuration>
+                    <from>
+                        <image>eclipse-temurin:21-alpine</image>
+                    </from>
+                    <to>
+                        <image>kafka-producer-jib</image>
+                    </to>
                 </configuration>
             </plugin>
         </plugins>

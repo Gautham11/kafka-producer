@@ -15,12 +15,7 @@ sleep 10  # Adjust based on startup time
 # Create Kafka topic
 TOPIC_NAME="test-kafka-topic"
 KAFKA_BROKER="localhost:9092"
-echo "Creating Kafka topic: $TOPIC_NAME..."
-sh ~/Downloads/kafka_2.12-3.9.0/bin/kafka-topics.sh --bootstrap-server "localhost:9092" \
-         --create \
-         --topic "$TOPIC_NAME" \
-         --partitions "1" \
-         --replication-factor "1" \
+
 
 
 # Wait for Vault to be ready
@@ -41,4 +36,11 @@ TRANSIT_KEY_NAME="encrypt-key"
 echo "Creating Vault transit key: $TRANSIT_KEY_NAME..."
 vault write -f transit/keys/$TRANSIT_KEY_NAME
 
+echo "Creating Kafka topic: $TOPIC_NAME..."
+sh ~/Downloads/kafka_2.12-3.9.0/bin/kafka-topics.sh --bootstrap-server "localhost:9092" \
+         --create \
+         --topic "$TOPIC_NAME" \
+         --partitions "1" \
+         --replication-factor "1" \
 echo "Setup complete!"
+

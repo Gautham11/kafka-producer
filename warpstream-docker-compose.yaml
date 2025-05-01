@@ -1,0 +1,70 @@
+services:
+  warp:
+    image: public.ecr.aws/warpstream-labs/warpstream_agent:latest
+    command:
+      - playground
+      - -advertiseHostnameStrategy
+      - custom
+      - -advertiseHostnameCustom
+      - warp
+    environment:
+      # this is a no-op as it will default on the custom advertised hostname defined above, but you can change this if you want to use a different hostname with Kafka
+      - WARPSTREAM_DISCOVERY_KAFKA_HOSTNAME_OVERRIDE=warp
+    healthcheck:
+      # Wait for the Agent to finish setting up the demo before marking it as healthy
+      # to delay the diagnose-connection command from running for a few seconds.
+      test: ["CMD", "sh", "-c", "sleep 10"]
+      interval: 5s
+      timeout: 15s
+      retries: 5
+
+  warp-diagnose:
+    image: public.ecr.aws/warpstream-labs/warpstream_agent:latest
+    command:
+      - kcmd
+      - -bootstrap-host
+      - warp
+      - -type
+      - diagnose-connection
+    depends_on:
+      warp:
+        condition: service_healthy
+
+  warp-create-topic:
+    image: public.ecr.aws/warpstream-labs/warpstream_agent:latest
+    command:
+      - kcmd
+      - -bootstrap-host
+      - warp
+      - -type
+      - create-topic
+      - -topic
+      - docker-compose-test-topic
+    depends_on:
+      warp:
+        condition: service_healthy
+
+  vault:
+    image: vault:1.13.3
+    container_name: vault-receiver
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_ADDR: "http://0.0.0.0/8200"
+      VAULT_DEV_ROOT_TOKEN_ID: "myroot"
+    healthcheck:
+      test: [ "CMD","vault","status" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  console:
+    image: docker.redpanda.com/vectorized/console:latest
+    container_name: console
+    ports:
+      - "8082:8080"
+    environment:
+      KAFKA_BROKERS: host.docker.internal:9092
+    depends_on:
+      warp:
+        condition: service_healthy
