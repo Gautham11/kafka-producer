@@ -1,6 +1,5 @@
 package com.example.kafkaproducer.service;
 
-import encryption.aes.AESEncryptionAndDecryptionKeys;
 import encryption.aes.AESEncryptionAndDecryptionService;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.header.Header;
@@ -40,8 +39,8 @@ public class KafkaProducerService {
     public void sendMessage(String topic, String message) throws InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException, ExecutionException, InterruptedException {
         Pair<String, String> encryptedTextAndEncryptedKey = aesEncryptionAndDecryptionService.encrypt(message);
         List<Header> kafkaHeaders = new ArrayList<>();
-        kafkaHeaders.add(new RecordHeader(AESEncryptionAndDecryptionKeys.ENCRYPTION_KEY_CIPHER_TEXT.getKey(), encryptedTextAndEncryptedKey.getValue1().getBytes()));
-        kafkaHeaders.add(new RecordHeader(AESEncryptionAndDecryptionKeys.ENCRYPTION_KEY_NAME.getKey(), encryptionKey.getBytes()));
+        kafkaHeaders.add(new RecordHeader("encryption-key-cipher-text", encryptedTextAndEncryptedKey.getValue1().getBytes()));
+        kafkaHeaders.add(new RecordHeader("encryption-key-name", encryptionKey.getBytes()));
         var uuid = UUID.randomUUID();
         var producerRecord = new ProducerRecord<>(topic, null, uuid.toString(),encryptedTextAndEncryptedKey.getValue0(),kafkaHeaders);
         kafkaTemplate.send(producerRecord).get();

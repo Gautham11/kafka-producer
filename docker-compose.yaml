@@ -1,52 +1,81 @@
----
+version: '3.9'
+
 services:
+
+  zookeeper:
+    image: bitnami/zookeeper:3.8.1
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+      - "2281:2281"
+    environment:
+      - ZOO_ENABLE_AUTH=no
+      - ZOO_TLS_CLIENT_ENABLE=no
+      - ZOO_STANDALONE_ENABLED=yes
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    volumes:
+      - ./secrets:/config
+
+  kafka:
+    image: bitnami/kafka:3.4.1
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9093:9093"
+    environment:
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,SASL_SSL://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,SASL_SSL://localhost:9093
+      - KAFKA_BROKER_ID=1
+      - KAFKA_CLIENT_USERS=admin,producer,consumer
+      - KAFKA_CLIENT_PASSWORDS=admin-secret,producer-secret,consumer-secret
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,SASL_SSL:SASL_SSL
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT            # 👈 Inter-broker now PLAINTEXT       # 👈 Must match
+      - KAFKA_CFG_SASL_ENABLED_MECHANISMS=SCRAM-SHA-512            # Change to SCRAM-SHA-512
+      - KAFKA_TLS_TYPE=JKS
+      - KAFKA_CFG_SSL_KEYSTORE_LOCATION=/bitnami/kafka/config/certs/kafka.keystore.jks
+      - KAFKA_CFG_SSL_KEYSTORE_PASSWORD=changeit
+      - KAFKA_CFG_SSL_TRUSTSTORE_LOCATION=/bitnami/kafka/config/certs/kafka.truststore.jks
+      - KAFKA_CFG_SSL_TRUSTSTORE_PASSWORD=changeit
+      - KAFKA_TLS_CLIENT_AUTH=required
+    volumes:
+      - ./secrets:/bitnami/kafka/config/certs
+      - ./kafka_server_jaas.conf:/opt/bitnami/kafka/config/kafka_server_jaas.conf
+      - ./log4j.properties:/opt/bitnami/kafka/config/log4j.properties
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - 8080:8080
+    environment:
+      KAFKA_CLUSTERS_0_NAME: secure-cluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9093
+      KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL: SASL_SSL
+      KAFKA_CLUSTERS_0_PROPERTIES_SASL_MECHANISM: SCRAM-SHA-512   # Change to SCRAM-SHA-512
+      KAFKA_CLUSTERS_0_PROPERTIES_SASL_JAAS_CONFIG: >
+        org.apache.kafka.common.security.scram.ScramLoginModule required
+        username="admin"
+        password="admin-secret";
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/kafka.truststore.jks
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_TRUSTSTORE_PASSWORD: changeit
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_TRUSTSTORE_TYPE: JKS
+    volumes:
+      - ./secrets:/etc/kafka/secrets:ro
+    depends_on:
+      - kafka
+
   vault:
     image: vault:1.13.3
     container_name: vault-receiver
     ports:
       - "8200:8200"
     environment:
-      VAULT_ADDR: "http://0.0.0.0/8200"
+      VAULT_ADDR: "http://0.0.0.0:8200"
       VAULT_DEV_ROOT_TOKEN_ID : "myroot"
     healthcheck:
-      test: ["CMD","vault","status"]
+      test: ["CMD", "vault", "status"]
       interval: 5s
       timeout: 3s
       retries: 5
-  zookeeper:
-    image: antrea/confluentinc-zookeeper:6.2.0
-    container_name: zookeeper
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-  broker:
-    image: antrea/confluentinc-kafka:6.2.0
-    container_name: broker
-    ports:
-      - "9092:9092"
-    depends_on:
-      - zookeeper
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://host.docker.internal:9092,PLAINTEXT_INTERNAL://broker:29092
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-    healthcheck:
-      test: ["CMD","kafka-topics","--list","--bootstrap-server","localhost:9092" ]
-      start_period: 15s
-      interval: 5s
-      timeout: 10s
-      retries: 10
-  console:
-    image: docker.redpanda.com/vectorized/console:latest
-    container_name: console
-    ports:
-      - "8082:8080"
-    environment:
-      KAFKA_BROKERS: host.docker.internal:9092
-    depends_on:
-      broker:
-        condition: service_healthy

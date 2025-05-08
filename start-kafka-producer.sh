@@ -16,7 +16,7 @@ sleep 10  # Adjust based on startup time
 TOPIC_NAME="test-kafka-topic"
 KAFKA_BROKER="localhost:9092"
 echo "Creating Kafka topic: $TOPIC_NAME..."
-sh ~/Downloads/kafka_2.12-3.9.0/bin/kafka-topics.sh --bootstrap-server "localhost:9092" \
+sh ~/Downloads/kafka_2.12-3.9.0/bin/kafka-topics.sh --bootstrap-server "kafka01:29192,kafka02:29292,kafka03:29392" \
          --create \
          --topic "$TOPIC_NAME" \
          --partitions "1" \
