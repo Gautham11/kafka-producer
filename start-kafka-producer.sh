@@ -12,15 +12,6 @@ docker-compose up -d
 echo "Waiting for Kafka to be ready..."
 sleep 10  # Adjust based on startup time
 
-# Create Kafka topic
-TOPIC_NAME="test-kafka-topic"
-KAFKA_BROKER="localhost:9092"
-echo "Creating Kafka topic: $TOPIC_NAME..."
-sh ~/Downloads/kafka_2.12-3.9.0/bin/kafka-topics.sh --bootstrap-server "kafka01:29192,kafka02:29292,kafka03:29392" \
-         --create \
-         --topic "$TOPIC_NAME" \
-         --partitions "1" \
-         --replication-factor "1" \
 
 
 # Wait for Vault to be ready
@@ -42,3 +33,7 @@ echo "Creating Vault transit key: $TRANSIT_KEY_NAME..."
 vault write -f transit/keys/$TRANSIT_KEY_NAME
 
 echo "Setup complete!"
+
+
+
+

@@ -15,7 +15,7 @@ openssl req -new -x509 -keyout ca-key.pem -out ca-cert.pem -days 365 \
 ### Step 2: Generate Keystore and CSR for Kafka
 keytool -genkeypair -alias kafka \
   -keyalg RSA -keysize 2048 -validity 365 \
-  -dname "CN=kafka" \
+  -dname "CN=host.docker.internal" \
   -keystore kafka.keystore.jks \
   -storepass $PASSWORD -keypass $PASSWORD
 
@@ -37,25 +37,21 @@ keytool -import -alias kafka -file kafka.crt \
   -keystore kafka.keystore.jks \
   -storepass $PASSWORD -noprompt
 
-### Step 5: Create truststore for Kafka (contains only CA cert)
+### Step 5: Create Kafka truststore (trust CA)
 keytool -import -alias CARoot -file ca-cert.pem \
   -keystore kafka.truststore.jks \
   -storepass $PASSWORD -noprompt
 
-
-### Step 5: Create truststore for Kafka UI (contains only CA cert)
+### Step 6: Create truststore for Kafka UI (contains only CA cert)
 keytool -import -alias CARoot -file ca-cert.pem \
   -keystore kafka-ui.truststore.jks \
   -storepass $PASSWORD -noprompt
 
-### Step 6: Create truststore for Kafka Producer and Consumer (contains only CA cert)
 cd ..
 cd src/main/resources
 keytool -import -alias CARoot -file ../../../secrets/ca-cert.pem \
-  -keystore kafka.client.truststore.jks \
+  -keystore kafka-client.truststore.jks \
   -storepass $PASSWORD -noprompt
 
 echo "✅ kafka-ui.truststore.jks created for Kafka UI access."
-
-
 echo "✅ All certificates, keystores, and truststores generated in 'secrets/'"

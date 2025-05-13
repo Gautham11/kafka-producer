@@ -35,7 +35,7 @@ public class KafkaProducerConfig {
 
 // Truststore for SSL
         String truststorePath = new File(
-                getClass().getClassLoader().getResource("kafka.client.truststore.jks").getFile()
+                getClass().getClassLoader().getResource("kafka-client.truststore.jks").getFile()
         ).getAbsolutePath();
 
         props.put("ssl.truststore.location", truststorePath);
